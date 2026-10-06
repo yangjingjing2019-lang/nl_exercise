@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>普通話 N 與 L 聲母辨音遊戲</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%);
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+        .pop-animation {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col justify-between min-h-screen p-4 sm:p-6">
+
+    <!-- Header bar -->
+    <header class="w-full max-w-md mx-auto bg-white/90 backdrop-blur-md rounded-2xl shadow-md p-3 mb-3 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <div class="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-md">
+                <i class="fa-solid fa-volume-high text-sm"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-xs sm:text-sm text-emerald-950">N 與 L 聲母辨音練習</h1>
+                <p class="text-[10px] text-slate-500">專業詞語對比特訓</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="startGame()" class="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-bold rounded-xl transition">
+                <i class="fa-solid fa-rotate-right mr-1"></i>重新開始
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="w-full max-w-md mx-auto flex-grow flex flex-col justify-center space-y-4">
+        
+        <!-- Stats Bar -->
+        <div class="bg-white rounded-2xl p-3 shadow-md flex justify-between items-center text-xs font-bold">
+            <div class="text-emerald-600">題數：<span id="q-idx">1</span> / <span id="q-total">12</span></div>
+            <div class="text-indigo-600">得分：<span id="score">0</span></div>
+        </div>
+
+        <!-- Question Card -->
+        <div id="card-container" class="bg-white rounded-3xl shadow-xl p-6 sm:p-8 flex flex-col items-center text-center relative overflow-hidden border border-emerald-50 pop-animation">
+            
+            <!-- Target character prompt badge -->
+            <div class="bg-emerald-50 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold mb-4">
+                請判斷詞語中指定字的聲母 (N 或 L)
+            </div>
+
+            <!-- Chinese Word ONLY (No Pinyin) -->
+            <div id="word-text" class="text-4xl sm:text-5xl font-black text-slate-800 tracking-widest mb-2">
+                牽連
+            </div>
+            
+            <!-- Focus character hint -->
+            <div id="focus-hint" class="text-xs text-slate-400 mb-6 font-medium">
+                考查字：<span class="text-emerald-600 font-bold text-sm">「連」</span>
+            </div>
+
+            <!-- Sound play button -->
+            <button onclick="speakCurrentWord()" class="w-16 h-16 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl shadow-sm mb-6 transition active:scale-95">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+            <span class="text-[11px] text-slate-400 -mt-4 mb-6">點擊聆聽標準普通話發音</span>
+
+            <!-- Options: ONLY N and L -->
+            <div id="options-area" class="grid grid-cols-2 gap-4 w-full mt-2">
+                <button onclick="submitAnswer('n')" class="py-4 px-6 bg-sky-50 hover:bg-sky-100 border-2 border-sky-300 text-sky-700 font-black text-2xl rounded-2xl shadow transition transform active:scale-95 flex flex-col items-center">
+                    <span>N</span>
+                    <span class="text-[10px] font-normal text-sky-500 mt-0.5">鼻音 [n]</span>
+                </button>
+                <button onclick="submitAnswer('l')" class="py-4 px-6 bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-300 text-emerald-700 font-black text-2xl rounded-2xl shadow transition transform active:scale-95 flex flex-col items-center">
+                    <span>L</span>
+                    <span class="text-[10px] font-normal text-emerald-500 mt-0.5">邊音 [l]</span>
+                </button>
+            </div>
+
+            <!-- Feedback & Pinyin Answer Area (Hidden initially) -->
+            <div id="feedback-area" class="hidden w-full mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center space-y-3 pop-animation">
+                <div id="feedback-result" class="text-lg font-black">
+                    <!-- Correct or Incorrect -->
+                </div>
+                <div class="w-full border-t border-slate-200 pt-2 flex flex-col items-center">
+                    <span class="text-xs text-slate-400 mb-1">正確拼音答案：</span>
+                    <span id="answer-pinyin" class="text-emerald-700 font-bold text-lg tracking-wider">qiān lián</span>
+                </div>
+                <button onclick="nextQuestion()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow transition">
+                    下一題 <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-md mx-auto text-center py-3 text-[11px] text-slate-400">
+        普通話教與學互動系統 &bull; 手機通用版
+    </footer>
+
+    <!-- Result / End Modal -->
+    <div id="modal-result" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-xs w-full text-center space-y-4 shadow-2xl pop-animation">
+            <div class="text-5xl">🏆</div>
+            <h3 class="text-xl font-bold text-slate-800">練習圓滿完成！</h3>
+            <p class="text-xs text-slate-500">你已順利完成本輪所有對比詞語辨音挑戰。</p>
+            <div class="bg-slate-50 p-3 rounded-2xl text-sm font-bold text-slate-700">
+                最終得分：<span id="final-score" class="text-emerald-600 text-lg">0</span> 分
+            </div>
+            <button onclick="startGame()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow transition">
+                再玩一次
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Complete dataset based strictly on user provided list
+        const wordList = [
+            { word: "千年", focus: "年", target: "n", pinyin: "qiān nián", desc: "千年 (qiān nián)" },
+            { word: "牽連", focus: "連", target: "l", pinyin: "qiān lián", desc: "牽連 (qiān lián)" },
+            { word: "允諾", focus: "諾", target: "n", pinyin: "yǔn nuò", desc: "允諾 (yǔn nuò)" },
+            { word: "隕落", focus: "落", target: "l", pinyin: "yǔn luò", desc: "隕落 (yǔn luò)" },
+            { word: "惱怒", focus: "惱", target: "n", pinyin: "nǎo nù", desc: "惱怒 (nǎonù)" },
+            { word: "老路", focus: "老", target: "l", pinyin: "lǎo lù", desc: "老路 (lǎolù)" },
+            { word: "門內", focus: "內", target: "n", pinyin: "mén nèi", desc: "門內 (mén nèi)" },
+            { word: "門類", focus: "類", target: "l", pinyin: "mén lèi", desc: "門類 (mén lèi)" },
+            { word: "南部", focus: "南", target: "n", pinyin: "nán bù", desc: "南部 (nán bù)" },
+            { word: "藍布", focus: "藍", target: "l", pinyin: "lán bù", desc: "藍布 (lán bù)" },
+            { word: "無奈", focus: "奈", target: "n", pinyin: "wú nài", desc: "無奈 (wú nài)" },
+            { word: "無賴", focus: "賴", target: "l", pinyin: "wú lài", desc: "無賴 (wú lài)" }
+        ];
+
+        let gameQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+
+        function startGame() {
+            document.getElementById('modal-result').classList.remove('flex');
+            document.getElementById('modal-result').classList.add('hidden');
+
+            // Randomize order every game
+            gameQuestions = [...wordList].sort(() => 0.5 - Math.random());
+            currentIndex = 0;
+            score = 0;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentIndex >= gameQuestions.length) {
+                endGame();
+                return;
+            }
+
+            document.getElementById('q-idx').innerText = currentIndex + 1;
+            document.getElementById('q-total').innerText = gameQuestions.length;
+            document.getElementById('score').innerText = score;
+
+            const current = gameQuestions[currentIndex];
+            document.getElementById('word-text').innerText = current.word;
+            document.getElementById('focus-hint').innerHTML = `考查字：<span class="text-emerald-600 font-bold text-sm">「${current.focus}」</span>`;
+
+            // Reset options and hide feedback area
+            document.getElementById('options-area').classList.remove('hidden');
+            document.getElementById('feedback-area').classList.add('hidden');
+
+            // Auto speak on load
+            setTimeout(() => speakCurrentWord(), 300);
+        }
+
+        function speakCurrentWord() {
+            const current = gameQuestions[currentIndex];
+            if ('speechSynthesis' in window && current) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(current.word);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function submitAnswer(choice) {
+            const current = gameQuestions[currentIndex];
+            const isCorrect = (choice === current.target);
+
+            if (isCorrect) {
+                score += 10;
+                document.getElementById('score').innerText = score;
+                document.getElementById('feedback-result').innerHTML = `<span class="text-emerald-600"><i class="fa-solid fa-circle-check mr-1"></i>答對了！</span>`;
+            } else {
+                document.getElementById('feedback-result').innerHTML = `<span class="text-rose-500"><i class="fa-solid fa-circle-xmark mr-1"></i>答錯了！正確聲母是 ${current.target.toUpperCase()}</span>`;
+            }
+
+            // Display correct pinyin answer
+            document.getElementById('answer-pinyin').innerText = current.desc;
+
+            // Hide options and show feedback box
+            document.getElementById('options-area').classList.add('hidden');
+            document.getElementById('feedback-area').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            loadQuestion();
+        }
+
+        function endGame() {
+            document.getElementById('final-score').innerText = score;
+            const modal = document.getElementById('modal-result');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        window.onload = () => {
+            startGame();
+        };
+    </script>
+</body>
+</html>
